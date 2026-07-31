@@ -1,0 +1,75 @@
+# copy.ys - 复制内存块并返回源数据的异或校验和
+# 作者：刘和磊
+# 学号：2023012122
+# 功能：等价于C函数copy_block，复制src到dest（非重叠），返回异或和
+
+
+# Execution begins at address 0 
+	.pos 0
+	irmovq stack, %rsp  	# Set up stack pointer
+	call main		# Execute main program
+	halt			# Terminate program 
+
+# 数据段：测试用源数据和目标数据块
+.align 8
+# Source block
+src:
+    .quad 0x00a
+    .quad 0x0b0
+    .quad 0xc00
+# Destination block
+dest:
+    .quad 0x111
+    .quad 0x222
+    .quad 0x333
+
+# 代码段
+main:
+    # 函数调用准备：copy_block(src, dest, 3)
+    irmovq src, %rdi      # 第一个参数：src指针
+    irmovq dest, %rsi     # 第二个参数：dest指针
+    irmovq $3, %rdx       # 第三个参数：长度len=3
+    call copy_block       # 调用复制函数
+    halt                  # 程序终止，%rax存储异或校验和
+
+# copy_block函数：long copy_block(long *src, long *dest, long len)
+# 参数：%rdi = src, %rsi = dest, %rdx = len
+# 返回值：%rax = 异或校验和
+copy_block:
+    # 函数序言
+    pushq %rbp
+    rrmovq %rsp, %rbp
+
+    # 初始化result = 0
+    xorq %rax, %rax       # %rax = 0（异或和初始值）
+
+copy_loop:
+    # 判断len是否为0：若%rdx == 0，跳至循环结束
+    andq %rdx, %rdx
+    je copy_end
+
+    # 读取src当前值并复制到dest
+    mrmovq (%rdi), %r10   # %r10 = *src
+    rmmovq %r10, (%rsi)   # *dest = %r10
+
+    # 更新异或和：result ^= val
+    xorq %r10, %rax
+
+    # 指针递增（long为8字节）、长度递减
+    irmovq $8, %r11
+    addq %r11, %rdi       # src++
+    addq %r11, %rsi       # dest++
+    irmovq $1, %r11
+    subq %r11, %rdx       # len--
+
+    jmp copy_loop
+
+copy_end:
+    # 函数结语
+    rrmovq %rbp, %rsp
+    popq %rbp
+    ret                   # 返回%rax中的异或校验和
+
+# Stack starts here and grows to lower addresses
+	.pos 0x200
+stack:

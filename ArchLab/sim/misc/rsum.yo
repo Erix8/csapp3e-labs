@@ -1,0 +1,63 @@
+                            | # rsum.ys - 递归求和链表元素
+                            | # 作者：刘和磊
+                            | # 学号：2023012122
+                            | # 功能：等价于C函数rsum_list，递归遍历链表并累加元素值
+                            | 
+                            | # Execution begins at address 0 
+0x000:                      | 	.pos 0
+0x000: 30f40002000000000000 | 	irmovq stack, %rsp  	# Set up stack pointer
+0x00a: 804800000000000000   | 	call main		# Execute main program
+0x013: 00                   | 	halt			# Terminate program 
+                            | 
+                            | # 数据段：测试用三元素链表（与sum.ys相同）
+0x018:                      | .align 8
+0x018:                      | ele1:
+0x018: 0a00000000000000     |     .quad 0x00a
+0x020: 2800000000000000     |     .quad ele2
+0x028:                      | ele2:
+0x028: b000000000000000     |     .quad 0x0b0
+0x030: 3800000000000000     |     .quad ele3
+0x038:                      | ele3:
+0x038: 000c000000000000     |     .quad 0xc00
+0x040: 0000000000000000     |     .quad 0
+                            | # END
+                            | 
+                            | # 代码段
+0x048:                      | main:
+0x048: 30f71800000000000000 |     irmovq ele1, %rdi     # 传入链表头指针ele1
+0x052: 805c00000000000000   |     call rsum_list        # 调用递归函数
+0x05b: 00                   |     halt
+                            | 
+                            | # rsum_list函数：long rsum_list(list_ptr ls)
+                            | # 参数：%rdi = ls
+                            | # 返回值：%rax = 累加和
+0x05c:                      | rsum_list:
+                            |     # 函数序言：保存被调用者保存寄存器（%rbp、%r10）
+0x05c: a05f                 |     pushq %rbp
+0x05e: 2045                 |     rrmovq %rsp, %rbp
+0x060: a0af                 |     pushq %r10            # 保存%r10（用于存储ls->val）
+                            | 
+                            |     # 基准情况：if (!ls) return 0
+0x062: 6277                 |     andq %rdi, %rdi
+0x064: 739500000000000000   |     je base_case
+                            | 
+                            |     # 递归情况：val = ls->val + rsum_list(ls->next)
+0x06d: 50a70000000000000000 |     mrmovq (%rdi), %r10   # %r10 = ls->val
+0x077: 50770800000000000000 |     mrmovq 8(%rdi), %rdi  # %rdi = ls->next（更新递归参数）
+0x081: 805c00000000000000   |     call rsum_list        # 递归调用，返回值存入%rax
+0x08a: 60a0                 |     addq %r10, %rax       # %rax = ls->val + 递归结果
+0x08c: 709700000000000000   |     jmp return
+                            | 
+0x095:                      | base_case:
+0x095: 6300                 |     xorq %rax, %rax       # 返回0
+                            | 
+0x097:                      | return:
+                            |     # 函数结语：恢复寄存器并返回
+0x097: b0af                 |     popq %r10
+0x099: 2054                 |     rrmovq %rbp, %rsp
+0x09b: b05f                 |     popq %rbp
+0x09d: 90                   |     ret
+                            | 
+                            | # Stack starts here and grows to lower addresses
+0x200:                      | 	.pos 0x200
+0x200:                      | stack:

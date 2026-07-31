@@ -1,0 +1,16 @@
+services:
+  ubuntu-lab:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ubuntu-lab
+    platform: linux/amd64
+    volumes:
+      # 关键：将主机当前目录挂载到容器的 /root/Labs
+      - .:/root/Labs
+      - /Users/erix/.ssh:/root/.ssh:ro
+    tty: true
+    privileged: true # 关键：授予容器特权，允许修改内核参数 (如关闭ASLR)
+    # sysctls:
+    #   # 关键：在容器启动时自动关闭 ASLR，永久有效（直到容器重启）
+    #   - kernel.randomize_va_space=0
