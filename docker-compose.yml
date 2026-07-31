@@ -8,7 +8,6 @@ services:
     volumes:
       # 关键：将主机当前目录挂载到容器的 /root/Labs
       - .:/root/Labs
-      - /Users/erix/.ssh:/root/.ssh:ro
     tty: true
     privileged: true # 关键：授予容器特权，允许修改内核参数 (如关闭ASLR)
     # sysctls:
