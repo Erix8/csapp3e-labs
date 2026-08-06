@@ -1,0 +1,15 @@
+services:
+  csapp3e-labs:
+    build: .
+    container_name: csapp3e-labs
+    platform: linux/amd64
+    volumes:
+      - ..:/root/csapp3e-labs
+      - ~/.ssh:/root/.ssh:ro
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    privileged: true

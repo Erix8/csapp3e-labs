@@ -2,41 +2,32 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-docker-compose
 {
     "name": "CS:APP Labs Dev Container",
-    // 告诉 VS Code 使用我们已有的 docker-compose.yml 文件
-    "dockerComposeFile": "../docker-compose.yml",
-    // 指定在 docker-compose.yml 中我们要连接的服务名称
-    "service": "ubuntu-lab",
-    // 指定在容器中工作的目录
-    "workspaceFolder": "/root/Labs",
-    // 设置容器启动后默认打开的终端类型
-    // 容器启动后要执行的命令，可以用来做一些初始化工作
+    "dockerComposeFile": "../docker/docker-compose.yml",
+    "service": "csapp3e-labs",
+    "workspaceFolder": "/root/csapp3e-labs",
     "postCreateCommand": [
-        "bash",
+        "zsh",
         "-c",
         "echo 0 > /proc/sys/kernel/randomize_va_space",
-        "bash",
+        "zsh",
         "-c",
         "echo '✅ ASLR has been disabled.'",
-        "bash",
+        "zsh",
         "-c",
         "echo '✅ Dev container is ready!'",
-        "bash",
+        "zsh",
         "-c",
-        "git config --global --add safe.directory /root/Labs"
+        "git config --global --add safe.directory /root/csapp3e-labs"
     ],
-    // 列出在容器中自动安装的 VS Code 扩展
     "customizations": {
         "vscode": {
             "settings": {
-                "terminal.integrated.defaultProfile.linux": "bash"
+                "terminal.integrated.defaultProfile.linux": "zsh"
             },
             "extensions": [
-                // C/C++ 开发必备扩展
                 "ms-vscode.cpptools",
                 "ms-vscode.cpptools-extension-pack",
-                // 代码拼写检查
                 "streetsidesoftware.code-spell-checker",
-                // Git 历史查看
                 "donjayamanne.githistory",
                 "ms-python.python"
             ]
