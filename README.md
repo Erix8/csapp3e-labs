@@ -14,15 +14,15 @@ networking. Each lab lives in its own directory with its own write-up and soluti
 
 | Lab | Summary | Progress |
 | --- | --- | --- |
-| [Data Lab] | Bit-level manipulations and integer/floating-point representation puzzles. | ✅ Finished |
-| [Bomb Lab] | Defuse a binary bomb by reverse-engineering x86-64 assembly. | 👨🏻‍💻 Working |
-| [Attack Lab] | Code injection and return-oriented programming (ROP) attacks. | ✅ Finished |
-| [Architecture Lab] | Design and optimize a pipelined Y86-64 processor. | ✅ Finished |
-| [Cache Lab] | Write a cache simulator and optimize matrix transpose for cache performance. | 😴 Pending |
-| [Performance Lab] | Optimize image processing kernels (rotate, smooth). | 😴 Pending |
-| [Shell Lab] | Write a simple Unix shell with job control. | 😴 Pending |
-| [Malloc Lab] | Implement a dynamic memory allocator (malloc, free, realloc). | 😴 Pending |
-| [Proxy Lab] | Write a concurrent web proxy with caching. | 😴 Pending |
+| [Data Lab] | Bit-level manipulations and integer/floating-point representation puzzles. | ✅ |
+| [Bomb Lab] | Defuse a binary bomb by reverse-engineering x86-64 assembly. | 👨🏻‍💻 |
+| [Attack Lab] | Code injection and return-oriented programming (ROP) attacks. | ✅ |
+| [Architecture Lab] | Design and optimize a pipelined Y86-64 processor. | ✅ |
+| [Cache Lab] | Write a cache simulator and optimize matrix transpose for cache performance. | 😴 |
+| [Performance Lab] | Optimize image processing kernels (rotate, smooth). | 😴 |
+| [Shell Lab] | Write a simple Unix shell with job control. | 😴 |
+| [Malloc Lab] | Implement a dynamic memory allocator (malloc, free, realloc). | 😴 |
+| [Proxy Lab] | Write a concurrent web proxy with caching. | 😴 |
 
 [Data Lab]: https://csapp.cs.cmu.edu/3e/datalab.pdf
 [Bomb Lab]: https://csapp.cs.cmu.edu/3e/bomblab.pdf
