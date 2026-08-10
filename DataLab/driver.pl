@@ -216,7 +216,7 @@ system("./dlc -Z -o Zap-bits.c save-bits.c") == 0
 # Run btest or the bdd checker to compute performance score
 #
 if ($USE_BTEST) {
-    print "\n4. Compiling and running './btest -g -r 3' to determine performance score.\n";
+    print "\n4. Compiling and running './btest -g -r 2' to determine performance score.\n";
     system("cp Zap-bits.c bits.c");
 
     # Compile btest
@@ -225,15 +225,15 @@ if ($USE_BTEST) {
     print "\n";
 
     # Run btest
-    $status = system("./btest -g -r 3 > btest-Zapped.out 2>&1");
+    $status = system("./btest -g -r 2 > btest-Zapped.out 2>&1");
     if ($status != 0) {
 	die "$0: ERROR: Zapped btest failed. $diemsg\n";
     }
 }
 else {
-    print "\n4. Running './bddcheck/check.pl -g -r 3' to determine performance score.\n";
+    print "\n4. Running './bddcheck/check.pl -g -r 2' to determine performance score.\n";
     system("cp Zap-bits.c bits.c");
-    $status = system("./bddcheck/check.pl -g -r 3 > btest-Zapped.out 2>&1");
+    $status = system("./bddcheck/check.pl -g -r 2 > btest-Zapped.out 2>&1");
     if ($status != 0) {
 	die "$0: ERROR: Zapped bdd checker failed. $diemsg\n";
     }
