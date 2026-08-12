@@ -1,2 +1,13 @@
 .DS_Store
 *.yo
+*.o
+*.tab.c
+*.tab.h
+*.yy.c
+hcl2c
+yas
+yis
+psim
+ssim
+*-std.c
+*-grammar.c
