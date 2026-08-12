@@ -119,7 +119,18 @@ long sum_list(list_ptr ls)
 On the sample three-element list (`0x00a → 0x0b0 → 0xc00`) the sum is
 `0x00a + 0x0b0 + 0xc00 = 0xCBA`:
 
-<img src="./pic/sum.ys.png" alt="sum.ys output"/>
+``` bash
+cd misc && ./yas sum.ys -o sum.yo && ./yis sum.yo 
+Stopped in 31 steps at PC = 0x5b.  Status 'HLT', CC Z=1 S=0 O=0
+Changes to registers:
+%rax:   0x0000000000000000      0x0000000000000cba
+%rsp:   0x0000000000000000      0x00000000000001f8
+%r10:   0x0000000000000000      0x0000000000000c00
+
+Changes to memory:
+0x01f0: 0x0000000000000000      0x000000000000005b
+0x01f8: 0x0000000000000000      0x0000000000000013
+```
 
 ### ✅ `rsum.ys` — recursive linked-list sum
 
@@ -145,7 +156,26 @@ long rsum_list(list_ptr ls)
 
 Same sample list → `0xCBA`:
 
-<img src="./pic/rsum.ys.png" alt="rsum.ys output"/>
+``` bash
+cd misc && ./yas rsum.ys -o rsum.yo && ./yis rsum.yo
+Stopped in 57 steps at PC = 0x5b.  Status 'HLT', CC Z=0 S=0 O=0
+Changes to registers:
+%rax:   0x0000000000000000      0x0000000000000cba
+%rsp:   0x0000000000000000      0x00000000000001f8
+
+Changes to memory:
+0x0198: 0x0000000000000000      0x0000000000000c00
+0x01a0: 0x0000000000000000      0x00000000000001b8
+0x01a8: 0x0000000000000000      0x000000000000008a
+0x01b0: 0x0000000000000000      0x00000000000000b0
+0x01b8: 0x0000000000000000      0x00000000000001d0
+0x01c0: 0x0000000000000000      0x000000000000008a
+0x01c8: 0x0000000000000000      0x000000000000000a
+0x01d0: 0x0000000000000000      0x00000000000001e8
+0x01d8: 0x0000000000000000      0x000000000000008a
+0x01f0: 0x0000000000000000      0x000000000000005b
+0x01f8: 0x0000000000000000      0x0000000000000013
+```
 
 ### ✅ `copy.ys` — copy a block & return the XOR checksum
 
@@ -175,7 +205,24 @@ long copy_block(long *src, long *dest, long len)
 On the sample blocks (`0x00a, 0x0b0, 0xc00`) the checksum is
 `0x00a ^ 0x0b0 ^ 0xc00 = 0xCBA`:
 
-<img src="./pic/copy.ys.png" alt="copy.ys output"/>
+``` bash
+cd misc && ./yas copy.ys -o copy.yo && ./yis copy.yo
+Stopped in 48 steps at PC = 0x6f.  Status 'HLT', CC Z=1 S=0 O=0
+Changes to registers:
+%rax:   0x0000000000000000      0x0000000000000cba
+%rsp:   0x0000000000000000      0x00000000000001f8
+%rsi:   0x0000000000000000      0x0000000000000048
+%rdi:   0x0000000000000000      0x0000000000000030
+%r10:   0x0000000000000000      0x0000000000000c00
+%r11:   0x0000000000000000      0x0000000000000001
+
+Changes to memory:
+0x0030: 0x0000000000000111      0x000000000000000a
+0x0038: 0x0000000000000222      0x00000000000000b0
+0x0040: 0x0000000000000333      0x0000000000000c00
+0x01f0: 0x0000000000000000      0x000000000000006f
+0x01f8: 0x0000000000000000      0x0000000000000013
+```
 
 ---
 
@@ -309,8 +356,6 @@ exactly the leftover elements — no wasted work, and `len = 0` falls straight
 through to `ret`.
 
 Result (from my run):
-
-<img src="./pic/ncopy.ys.png" alt="ncopy benchmark output"/>
 
 ```text
 Average CPE      7.49
