@@ -1,5 +1,5 @@
 
-rtarget：     文件格式 elf64-x86-64
+rtarget:     file format elf64-x86-64
 
 
 Disassembly of section .text:
