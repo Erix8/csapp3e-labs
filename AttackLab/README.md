@@ -46,6 +46,15 @@ stack gets boring, by stitching together existing code with ROP. ✨
 
 ---
 
+## 🔗 Official Resources
+
+Get the official lab guide and the self-study handout from the CS:APP site:
+
+- 📘 [Attack Lab writeup](https://csapp.cs.cmu.edu/3e/attacklab.pdf) — the official lab guide
+- 📦 [Self-study handout `target1.tar`](https://csapp.cs.cmu.edu/3e/target1.tar)
+
+---
+
 ## 🚀 Quick Start
 
 `ctarget` / `rtarget` / `hex2raw` are **Linux x86-64 ELF binaries**, so they need the

