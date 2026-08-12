@@ -1,3 +1,2 @@
 .DS_Store
-sim/misc/*.yo
-sim/pipe/*.yo
+*.yo
