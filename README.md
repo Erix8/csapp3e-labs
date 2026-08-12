@@ -17,22 +17,22 @@ networking. Each lab lives in its own directory with its own write-up and soluti
 | [Data Lab] | Bit-level manipulations and integer/floating-point representation puzzles. | ✅ |
 | [Bomb Lab] | Defuse a binary bomb by reverse-engineering x86-64 assembly. | 👨🏻‍💻 |
 | [Attack Lab] | Code injection and return-oriented programming (ROP) attacks. | 👨🏻‍💻 |
-| [Architecture Lab] | Design and optimize a pipelined Y86-64 processor. | ✅ |
+| [Arch Lab] | Design and optimize a pipelined Y86-64 processor. | ✅ |
 | [Cache Lab] | Write a cache simulator and optimize matrix transpose for cache performance. | 😴 |
-| [Performance Lab] | Optimize image processing kernels (rotate, smooth). | 😴 |
+| [Perf Lab] | Optimize image processing kernels (rotate, smooth). | 😴 |
 | [Shell Lab] | Write a simple Unix shell with job control. | 😴 |
 | [Malloc Lab] | Implement a dynamic memory allocator (malloc, free, realloc). | 😴 |
 | [Proxy Lab] | Write a concurrent web proxy with caching. | 😴 |
 
 [Data Lab]: ./DataLab/README.md
-[Bomb Lab]: https://csapp.cs.cmu.edu/3e/bomblab.pdf
+[Bomb Lab]: ./BombLab/README.md
 [Attack Lab]: ./AttackLab/README.md
-[Architecture Lab]: ./ArchLab/README.md
-[Cache Lab]: https://csapp.cs.cmu.edu/3e/cachelab.pdf
-[Performance Lab]: https://csapp.cs.cmu.edu/3e/perflab.pdf
-[Shell Lab]: https://csapp.cs.cmu.edu/3e/shlab.pdf
-[Malloc Lab]: https://csapp.cs.cmu.edu/3e/malloclab.pdf
-[Proxy Lab]: https://csapp.cs.cmu.edu/3e/proxylab.pdf
+[Arch Lab]: ./ArchLab/README.md
+[Cache Lab]: ./CacheLab/README.md
+[Perf Lab]: ./PerfLab/README.md
+[Shell Lab]: ./ShellLab/README.md
+[Malloc Lab]: ./MallocLab/README.md
+[Proxy Lab]: ./ProxyLab/README.md
 
 ---
 
