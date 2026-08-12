@@ -135,6 +135,31 @@ For `ctarget`, GDB pinned down the stack layout around `getbuf()`:
 
 Both binaries are **non-PIE**, so all code addresses are stable across runs. 🙌
 
+> ⚠️ **Stack addresses are environment-specific — re-derive them with GDB!**
+> The `0x5564…` addresses above (buffer / injected code / cookie string) belong
+> to the exact binary + container this write-up was verified with. They are
+> **not portable**: the actual stack address depends on this instance's
+> `buf_offset` (derived from `srandom(target_id+1)` + `scramble()`), which
+> differs across environments, builds and containers. **Before replaying
+> Phases 2 & 3, re-derive the buffer address in *your* environment:**
+>
+> ```bash
+> # 1. feed any (harmless) input, e.g. Phase 1's raw bytes
+> cat ctarget01.txt | ./hex2raw > /tmp/in.bin
+>
+> # 2. stop at getbuf right after the buffer is allocated (sub $0x38,%rsp)
+> gdb -batch \
+>   -ex 'b *0x808920' \
+>   -ex 'run -q < /tmp/in.bin' \
+>   -ex 'p/x $rsp' \
+>   ./ctarget
+>
+> # $rsp is BUF_START → injected code goes at BUF_START + 0x28 (40 bytes in),
+> # and the Phase-3 cookie string at BUF_START + 0xbf (191 bytes in).
+> ```
+> Then write the derived value into `ctarget02.txt` / `ctarget03.txt`
+> (little-endian, 8 bytes).
+
 ---
 
 ## 💉 Part I: Code Injection Attacks (`ctarget`)
@@ -192,6 +217,13 @@ e0 90 64 55 00 00 00 00                 ← return address → 0x556490e0
 
 `mov` sets `%rdi = 0x4df13892`, `push` drops `touch2`'s address onto the stack, and
 `ret` jumps straight into it. 🎉
+
+> 🪤 **Gotcha: the injected code must start at offset 40 (`0x556490e0`) — don't shift it!**
+> The 13-byte payload must start at byte offset 40 of the 56-byte buffer. If it
+> starts later, it
+> **overlaps the return-address slot** at offset 56 → the first payload byte
+> clobbers the return address (`e0 90 64 55 …` is never used) and `getbuf`'s
+> `ret` jumps into garbage → `Ouch!: You caused a segmentation fault!`.
 
 ### 🥊 Phase 3 — `touch3` (inject code that passes the cookie *string*)
 
