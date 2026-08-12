@@ -1,7 +1,6 @@
-# sum.ys - 迭代求和链表元素
-# 作者：刘和磊
-# 学号：2023012122
-# 功能：等价于C函数sum_list，迭代遍历链表并累加元素值
+# sum.ys - Iterative linked-list sum
+# Author: Erix8
+# Equivalent to the C function sum_list
 
 # Execution begins at address 0 
 	.pos 0
@@ -9,7 +8,7 @@
 	call main		# Execute main program
 	halt			# Terminate program 
 
-# 数据段：测试用三元素链表
+# Data: test linked list (3 elements)
 .align 8
 ele1:
     .quad 0x00a
@@ -22,42 +21,32 @@ ele3:
     .quad 0
 # END
 
-# 代码段
+# Code
 main:
-    # 函数调用准备：sum_list(ele1)
-    irmovq ele1, %rdi     # 第一个参数：链表头指针ele1存入%rdi
-    call sum_list         # 调用sum_list函数
-    halt                  # 程序终止
+    irmovq ele1, %rdi     # arg1 = head of list
+    call sum_list
+    halt
 
-# sum_list函数：long sum_list(list_ptr ls)
-# 参数：%rdi = ls（链表头指针）
-# 返回值：%rax = 累加和
+# sum_list: long sum_list(list_ptr ls)
+# %rdi = ls, returns sum in %rax
 sum_list:
-    # 函数序言：保存被调用者保存寄存器（无使用，仅遵循调用约定）
-    pushq %rbp            # 建立栈帧
+    pushq %rbp            # Save old frame pointer
     rrmovq %rsp, %rbp
 
-    # 初始化val = 0
-    xorq %rax, %rax       # %rax = 0（累加和初始值）
+    xorq %rax, %rax       # sum = 0
 
 loop_start:
-    # 判断ls是否为NULL：若%rdi == 0，跳至循环结束
-    andq %rdi, %rdi
+    andq %rdi, %rdi       # ls == NULL?
     je loop_end
-
-    # 读取ls->val：(%rdi)存储val，%rdi+8存储next指针
-    mrmovq (%rdi), %r10   # %r10 = ls->val
-    addq %r10, %rax       # val += ls->val
-
-    # 更新ls = ls->next
-    mrmovq 8(%rdi), %rdi  # %rdi = ls->next
-    jmp loop_start        # 回到循环开头
+    mrmovq (%rdi), %r10   # r10 = ls->val
+    addq %r10, %rax       # sum += ls->val
+    mrmovq 8(%rdi), %rdi  # ls = ls->next
+    jmp loop_start
 
 loop_end:
-    # 函数结语：恢复栈帧
-    rrmovq %rbp, %rsp
+    rrmovq %rbp, %rsp     # Restore stack
     popq %rbp
-    ret                   # 返回%rax中的累加和
+    ret
 
 # Stack starts here and grows to lower addresses
 	.pos 0x200

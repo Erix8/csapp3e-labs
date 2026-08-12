@@ -1,7 +1,6 @@
-# rsum.ys - 递归求和链表元素
-# 作者：刘和磊
-# 学号：2023012122
-# 功能：等价于C函数rsum_list，递归遍历链表并累加元素值
+# rsum.ys - Recursive linked-list sum
+# Author: Erix8
+# Equivalent to the C function rsum_list
 
 # Execution begins at address 0 
 	.pos 0
@@ -9,7 +8,7 @@
 	call main		# Execute main program
 	halt			# Terminate program 
 
-# 数据段：测试用三元素链表（与sum.ys相同）
+# Data: test linked list (3 elements)
 .align 8
 ele1:
     .quad 0x00a
@@ -22,39 +21,34 @@ ele3:
     .quad 0
 # END
 
-# 代码段
+# Code
 main:
-    irmovq ele1, %rdi     # 传入链表头指针ele1
-    call rsum_list        # 调用递归函数
+    irmovq ele1, %rdi     # arg1 = head of list
+    call rsum_list
     halt
 
-# rsum_list函数：long rsum_list(list_ptr ls)
-# 参数：%rdi = ls
-# 返回值：%rax = 累加和
+# rsum_list: long rsum_list(list_ptr ls)
+# %rdi = ls, returns sum in %rax
 rsum_list:
-    # 函数序言：保存被调用者保存寄存器（%rbp、%r10）
-    pushq %rbp
+    pushq %rbp            # Save old frame pointer
     rrmovq %rsp, %rbp
-    pushq %r10            # 保存%r10（用于存储ls->val）
+    pushq %r10            # Save callee-saved r10
 
-    # 基准情况：if (!ls) return 0
-    andq %rdi, %rdi
+    andq %rdi, %rdi       # base case: ls == NULL?
     je base_case
 
-    # 递归情况：val = ls->val + rsum_list(ls->next)
-    mrmovq (%rdi), %r10   # %r10 = ls->val
-    mrmovq 8(%rdi), %rdi  # %rdi = ls->next（更新递归参数）
-    call rsum_list        # 递归调用，返回值存入%rax
-    addq %r10, %rax       # %rax = ls->val + 递归结果
+    mrmovq (%rdi), %r10   # r10 = ls->val
+    mrmovq 8(%rdi), %rdi  # ls = ls->next
+    call rsum_list        # recurse, result in %rax
+    addq %r10, %rax       # return ls->val + rest
     jmp return
 
 base_case:
-    xorq %rax, %rax       # 返回0
+    xorq %rax, %rax       # return 0
 
 return:
-    # 函数结语：恢复寄存器并返回
-    popq %r10
-    rrmovq %rbp, %rsp
+    popq %r10             # Restore callee-saved r10
+    rrmovq %rbp, %rsp     # Restore stack
     popq %rbp
     ret
 

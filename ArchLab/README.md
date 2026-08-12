@@ -1,372 +1,354 @@
-## Archlab: 优化流水线处理器的性能 
+# 🏗️ CSAPP Architecture Lab
 
------
+> **Designing a pipelined Y86-64 processor — and teaching `ncopy` to fly.** ⚡
 
-## 1 简介
+This is my solution to the **Architecture Lab** from
+[*Computer Systems: A Programmer's Perspective (3rd Edition)*](https://csapp.cs.cmu.edu/),
+as assigned in my university course. The lab walks through the whole stack of a
+processor: hand-writing Y86-64 assembly (Part A), extending the SEQ simulator with
+a brand-new `iaddq` instruction (Part B), and finally squeezing every last cycle out
+of a pipelined design and a benchmark `ncopy` routine (Part C). ✨
 
-在本次实验中，你将学习流水线 Y86-64 处理器的设计与实现，并通过优化处理器和一个基准程序来最大化性能。完成实验后，你将深刻理解代码和硬件之间如何相互作用并影响程序性能。
+---
 
-该实验分为三个部分，每个部分都需要单独提交。
+## ⚠️ Disclaimer — read this first
 
-  * **Part A**：你将编写一些简单的 Y86-64 程序，并熟悉 Y86-64 工具集。
-  * **Part B**：你将为 SEQ 模拟器扩展一条新指令。
-  * **Part C**：这是实验的核心部分，你将优化 Y86-64 基准程序和处理器设计。
+- **Course instance, not the official handout.** The Y86-64 tools under `sim/` come
+  from my course's copy of `sim.tar` and may differ in details from the official
+  `archlab-handout.tar` on the CS:APP website.
+- **Everything below is instance-specific.** CPE numbers and the grading thresholds
+  follow the course handout for *this* instance.
+- **Needs a Linux environment.** The Y86-64 tools (`yas`, `yis`, `ssim`, `psim` and
+  their Tk GUI) are old Unix C code — they build and run best inside the Linux
+  container at the repo root. 🤷
 
-## 2 准备工作
+---
 
-1. 下载作业文件`archlab-handout.tar`。
-2. 执行命令：`tar xvf archlab-handout.tar`。这会将以下文件解压到目录中：`README`、`Makefile`、`sim.tar`、`archlab.pdf` 和 `simguide.pdf`。
-3. 执行命令 `tar xvf sim.tar`。这会创建一个名为 `sim` 的目录，其中包含你将要使用的 Y86-64 工具。你所有的工作都将在这个目录内完成。
-4. 切换到 `sim` 目录并构建 Y86-64 工具： 
-   ```bash
-   unix> cd sim
-   unix> make clean; make
-   ```
+## 📂 What's in this directory?
 
+| File | Purpose |
+| --- | --- |
+| `sim/` | 🛠️ The full Y86-64 toolchain + all my solutions |
+| `sim/misc/*.ys` | 📝 Part A: `sum.ys`, `rsum.ys`, `copy.ys` |
+| `sim/seq/seq-full.hcl` | ⚙️ Part B: SEQ control logic with `iaddq` support |
+| `sim/pipe/pipe-full.hcl` | ⚙️ Part C: PIPE control logic with `iaddq` support |
+| `sim/pipe/ncopy.ys` | ⚡ Part C: the optimized `ncopy` (avg CPE **7.49**) |
+| `sim/y86-code/` | 🧪 Benchmark programs for the regression tests |
+| `sim/ptest/` | 🧪 Regression-test suites for `ssim` / `psim` |
+| `pic/` | 🖼️ Screenshots of the Y86-64 runs |
+| `Makefile` | 🚗 Handin helper |
 
-## 3 Part A
+---
 
-这部分你将在 `sim/misc` 目录下工作。
+## 🔗 Official Resources
 
-你的任务是编写并模拟三个 Y86-64 程序，这些程序的预期行为参考 `examples.c` 文件中的C函数示例定义。在实现过程中，你应该遵循x86-64关于函数参数传递、寄存器使用和栈使用的约定，包括保存和恢复任何你使用到的被调用者保存（callee-save）的寄存器。要对你的程序进行测试，你可以使用 YAS 程序汇编你的代码，然后用 YIS 指令集模拟器来运行它们。
+Get the official lab guide and the self-study handout from the CS:APP site:
 
-请在每个程序的开头注释中写上你的姓名和学号。
+- 📘 [Architecture Lab writeup](https://csapp.cs.cmu.edu/3e/archlab.pdf) — the official lab guide
+- 📄 [Guide to Y86-64 Simulators](https://csapp.cs.cmu.edu/3e/simguide.pdf) — how `ssim` / `psim` work
+- 📦 [Self-study handout `archlab-handout.tar`](https://csapp.cs.cmu.edu/3e/archlab-handout.tar)
 
-#### `sum.ys`: 迭代求链表元素之和
+---
 
-编写一个Y86-64程序 `sum.ys`，用于迭代计算一个链表中所有元素的和。你的程序应该包含一些设置栈结构、调用一个函数然后停止的代码。
+## 🚀 Quick Start
 
-该函数（`sum_list`）在功能上应等同于 `examples.c` 文件中的C函数 `sum.list`。具体代码为：
+The Y86-64 tools are old Unix C code with a Tk GUI — build & run them in the Linux
+container at the repo root:
 
-```C
-/* linked list element */
-typedef struct ELE {
-    long val;
-    struct ELE *next;
-} *list_ptr;
+```bash
+# 1. Boot the container (Ubuntu 20.04, linux/amd64)
+docker compose -f docker/docker-compose.yml up -d
+docker exec -it csapp3e-labs zsh
 
-/* sum_list - Sum the elements of a linked list */
+# 2. Inside the container — repo is mounted at /root/csapp3e-labs
+cd ArchLab/sim
+
+# 3. Build the whole toolchain (yas, yis, ssim, psim, ...)
+make clean && make
+
+# 4. Part A — assemble & simulate a Y86-64 program
+cd misc
+make sum.yo                 # yas: sum.ys -> sum.yo
+./yis sum.yo                # simulate the .yo
+```
+
+---
+
+## 🗺️ The Three Parts
+
+| Part | Where | Goal |
+| --- | --- | --- |
+| A | `sim/misc` | write three Y86-64 programs by hand |
+| B | `sim/seq` | add the `iaddq` instruction to the SEQ processor |
+| C | `sim/pipe` | add `iaddq` to PIPE **and** optimize `ncopy` for speed |
+
+The trick that ties it together: an instruction is just five little stages
+(fetch → decode → execute → memory → write-back), and a pipeline is just an
+assembly line of those stages. Parts B and C are the same idea applied to two
+different simulators.
+
+---
+
+## 📜 Part A: Y86-64 Assembly (`sim/misc`)
+
+Goal: write three Y86-64 programs that behave like the C functions in
+`sim/misc/examples.c`, following the x86-64 calling conventions (arguments in
+`%rdi`, `%rsi`, `%rdx`; return value in `%rax`; callee-saved registers preserved).
+Assemble with `yas`, simulate with `yis`.
+
+### ✅ `sum.ys` — iterative linked-list sum
+
+```c
 long sum_list(list_ptr ls)
 {
     long val = 0;
     while (ls) {
-	val += ls->val;
-	ls = ls->next;
+        val += ls->val;
+        ls = ls->next;
     }
     return val;
 }
 ```
 
-你可以在代码中使用以下三元素列表来测试你的程序： 
+- `xorq %rax, %rax` — zero the accumulator.
+- Loop: `andq %rdi, %rdi` checks whether `ls` is `NULL`; if so, jump out.
+- `mrmovq (%rdi), %r10` loads `ls->val`, `addq %r10, %rax` accumulates,
+  `mrmovq 8(%rdi), %rdi` advances `ls` to `ls->next`.
+- Epilogue: restore the frame (`rrmovq %rbp, %rsp` / `popq %rbp`) and `ret`.
 
-```nasm
-# Sample linked list
-.align 8
-elel:
-    .quad 0x00a
-    .quad ele2
-ele2:
-    .quad 0x0b0
-    .quad ele3
-ele3:
-    .quad 0xc00
-    .quad 0
-```
+On the sample three-element list (`0x00a → 0x0b0 → 0xc00`) the sum is
+`0x00a + 0x0b0 + 0xc00 = 0xCBA`:
 
-#### `rsum.ys`: 递归求链表元素之和
+<img src="./pic/sum.ys.png" alt="sum.ys output"/>
 
-编写一个Y86-64程序 `rsum.ys`，用于递归地计算一个链表中所有元素的和。这段代码应该与 `sum.ys` 中的代码类似，但它应该使用一个名为 `rsum_list` 的函数来递归求和。该函数在功能上应等同于如下的C函数。
+### ✅ `rsum.ys` — recursive linked-list sum
 
-```C
-/* rsum_list - Recursive version of sum_list */
+```c
 long rsum_list(list_ptr ls)
 {
     if (!ls)
-	return 0;
+        return 0;
     else {
-	long val = ls->val;
-	long rest = rsum_list(ls->next);
-	return val + rest;
+        long val = ls->val;
+        long rest = rsum_list(ls->next);
+        return val + rest;
     }
 }
 ```
 
-使用与 `list.ys` 相同的三个元素列表来测试你的程序。
+- Base case: `andq %rdi, %rdi` / jump when empty → `xorq %rax, %rax` returns 0.
+- Save `ls->val` in `%r10` (`mrmovq (%rdi), %r10`), advance with
+  `mrmovq 8(%rdi), %rdi`, then `call` recurses.
+- After the call, `addq %r10, %rax` adds the saved value to the recursive result.
+- `%r10` is callee-saved, so the value is pushed (`pushq %r10`) and restored
+  (`popq %r10`) around the recursion so each stack frame's data stays intact.
 
-#### `copy.ys`: 复制源块到目标块
+Same sample list → `0xCBA`:
 
-编写一个程序 (`copy.ys`)，将内存中的一个数据块从一个位置复制到另一个（不重叠的）内存区域，并计算所有被复制字的校验和（Xor）。你的程序应该包含设置栈帧、调用 `copy_block` 函数然后停止的代码。该函数在功能上应等同于如下的C函数 `copy_block`。
+<img src="./pic/rsum.ys.png" alt="rsum.ys output"/>
 
-``` C
-/* copy_block - Copy src to dest and return xor checksum of src */
+### ✅ `copy.ys` — copy a block & return the XOR checksum
+
+```c
 long copy_block(long *src, long *dest, long len)
 {
     long result = 0;
     while (len > 0) {
-	long val = *src++;
-	*dest++ = val;
-	result ^= val;
-	len--;
+        long val = *src++;
+        *dest++ = val;
+        result ^= val;
+        len--;
     }
     return result;
 }
 ```
 
-  使用以下的三元素源块和目标块来测试你的程序： 
+- `xorq %rax, %rax` — zero the checksum.
+- Loop: `andq %rdx, %rdx` tests `len == 0`.
+- `mrmovq (%rdi), %r10` reads `*src`, `rmmovq %r10, (%rsi)` stores `*dest`,
+  `xorq %r10, %rax` folds the value into the checksum.
+- `addq $8, %rdi` / `addq $8, %rsi` advance both pointers,
+  `subq $1, %rdx` decrements the length.
+- Only caller-saved scratch regs (`%r10`, `%r11`) are used — no callee-saved
+  register to save/restore.
 
-```nasm
-.align 8
-# Source block
-src:
-    .quad 0x00a
-    .quad 0x0b0
-    .quad 0xc00
-# Destination block
-dest:
-    .quad 0x111
-    .quad 0x222
-    .quad 0x333
-```
+On the sample blocks (`0x00a, 0x0b0, 0xc00`) the checksum is
+`0x00a ^ 0x0b0 ^ 0xc00 = 0xCBA`:
 
-## 4 Part B
+<img src="./pic/copy.ys.png" alt="copy.ys output"/>
 
-这部分你将在 `sim/seq` 目录下工作。
+---
 
-#### 任务介绍
+## ⚙️ Part B: `iaddq` in SEQ (`sim/seq`)
 
-你的任务是扩展 SEQ 处理器以支持 `iaddq` 指令，对该指令的描述可以在 CS:APP3e 教材习题4.51和4.52中找到。为了添加这条指令，你需要修改 `seq-full.hcl` 文件，该文件实现了教材中描述的 SEQ 版本。此外，它还包含了一些你的代码中会需要的常量声明。
+**Goal:** extend the SEQ simulator to support `iaddq V, rB` — add an immediate to a
+register, write the result back, and update the condition codes. (`iaddq -10, %rdx`
+is exactly what Part C uses for the loop counters!) The `iaddq` instruction saves
+*two* instructions compared to the old `irmovq` + `addq` idiom.
 
-你还需要在你的HCL文件开头添加以下注释：
+`iaddq` is a 10-byte instruction (opcode `0xC` + reg field `rA:rB` + 8-byte
+immediate). Walking it through the six SEQ stages:
 
-  * 你的姓名和学号。
-  * 对 `iaddq` 指令所需计算过程的描述。可以参考教材图4.18中对 `irmovq` 和 `OPq` 的描述作为指导。
+| Stage | What happens |
+| --- | --- |
+| Fetch | `icode:ifun ← M1[PC]`, `rA:rB ← M1[PC+1]`, `valC ← M8[PC+2]`, `valP = PC + 10` |
+| Decode | read `valB ← R[rB]` (no `rA` operand) |
+| Execute | `valE = valB + valC`; update ZF/SF/OF |
+| Memory | none |
+| Write back | `R[rB] = valE` |
+| PC update | `PC = valP` (sequential) |
 
-#### 构建和测试
+Adding it to `seq-full.hcl` is then just wiring those facts into the control
+signals:
 
-完成 `seq-full.hcl` 文件的修改后，你需要基于此 HCL 文件构建一个新的 SEQ 模拟器（`ssim`）实例，然后进行测试： 
+- `instr_valid` += `IIADDQ` (it's a legal instruction)
+- `need_regids` += `IIADDQ` (has an `rB` field)
+- `need_valC` += `IIADDQ` (has an 8-byte immediate)
+- `srcB = rB`, `dstE = rB` (read `valB`, write the result back to `rB`)
+- `aluA = valC`, `aluB = valB`, `alufun = ALUADD` (add the immediate to the register)
+- `set_cc` = `{ IOPQ, IIADDQ }` (update the condition codes)
+- no memory access; `PC = valP`
 
-  * **构建新的模拟器**：你可以使用 `make` 来构建新的 SEQ 模拟器： 
-
-    ```bash
-    unix> make VERSION=full
-    ```
-
-    
-    这会构建一个使用你在 `seq-full.hcl` 中指定控制逻辑的 `ssim` 版本。
-
-  * **在简单的 Y86-64 程序上测试**：对于初步测试，我们建议在 TTY 模式下运行像 `asumi.yo`（测试 `iaddq`）这样的简单程序，并将结果与 ISA 模拟进行比较： 
-
-    ```bash
-    unix> ./ssim -t ../y86-code/asumi.yo
-    ```
-
-    
-    如果 ISA 测试失败，你可以在 GUI 模式下单步调试你的实现： 
-
-    ```bash
-    unix> ./ssim -g ../y86-code/asumi.yo
-    ```
-
-  * **使用基准程序重新测试**：一旦你的模拟器能够正确执行小程序，你就可以在 `../y86-code` 中的 Y86-64 基准程序上自动进行测试： 
-
-    ```bash
-    unix> (cd ../y86-code; make testssim)
-    ```
-
-    
-    这将在基准程序上运行 `ssim`，并通过将最终的处理器状态与高级 ISA 模拟的状态进行比较来检查正确性。**请注意，基准测试并不会测试你新增的指令，而是检查你新增的代码没有为原始指令引入错误。**
-
-  * **执行回归测试**：当你能正确执行基准程序后，你应该运行 `../ptest` 中更广泛的回归测试集。
-
-      * 测试除 `iaddq` 之外的所有内容： 
-        ```bash
-        unix> (cd ../ptest; make SIM=../seq/ssim)
-        ```
-        
-      * 测试你对 `iaddq` 的实现： 
-        ```bash
-        unix> (cd ../ptest; make SIM=../seq/ssim TFLAGS=-i)
-        ```
-        
-
-更多关于 SEQ 模拟器的信息，请参考实验资料《CS:APP3e Guide to Y86-64 Processor Simulators (simguide.pdf)》。
-
-## 5 Part C
-
-这部分你将在 `sim/pipe` 目录下工作。
-
-#### 任务介绍
-
-你在 Part C 的任务是修改 `ncopy.ys` 和 `pipe-full.hcl`，最终的目标是让 `ncopy.ys` 运行得尽可能快。
-
-`ncopy` 函数将一个长度为 `len` 的整型数组 `src` 复制到不重叠的 `dst`，并返回 `src` 中正整数的数量。其C语言实现如下。
-
-```c
-/*
- * ncopy - copy src to dst, returning number of positive ints
- * contained in src array.
- */
-word_t ncopy(word_t *src, word_t *dst, word_t len)
-{
-    word_t count = 0;
-    word_t val;
-
-    while (len > 0) {
-        val = *src++;
-        *dst++ = val;
-        if (val > 0)
-            count++;
-        len--;
-    }
-    return count;
-}
-```
-
-`ncopy.ys` 中包含该函数的基准Y86-64版本。`pipe-full.hcl` 文件包含了 PIPE 的 HCL 代码副本，以及 `IIADDQ` 的声明。
-
-你需要提交两个文件：`pipe-full.hcl` 和 `ncopy.ys`。每个文件的开头需要包括以下注释： 
-
-  * 你的姓名和学号。
-  * 对你代码的描述。在每个文件中，描述你如何以及为何修改了代码。
-
-#### 编码规则
-
-你可以自由地进行任何修改，但需遵守以下限制： 
-
-  * 你的 `ncopy.ys` 函数必须能在 YIS 上正确运行。所谓正确，是指它必须正确地复制任意大小的 `src` 块，并在 `%rax` 中返回正确的正整数数量。
-
-    * 汇编后的 `ncopy` 文件长度不得超过1000字节。你可以使用提供的 `check-len.pl` 脚本检查嵌入了 `ncopy` 函数的程序长度： 
-
-    ```bash
-    unix> ./check-len.pl < ncopy.yo
-    ```
-
-  * 你的 `pipe-full.hcl` 实现必须通过 `../y86-code` 和 `../ptest` 中的回归测试（不带测试 `iaddq` 的 `-i` 标志）。
-
-除此之外，如果你认为 `iaddq` 指令有帮助，你可以自由实现它。你可以对 `ncopy.ys` 函数进行任何保持语义的转换，例如重排指令、用单条指令替换多条指令、删除某些指令以及添加其他指令。阅读教材第5.8节关于循环展开的内容可能会对你有帮助。
-
-#### 构建和运行
-
-为了测试你的代码，你需要构建一个调用你的 `ncopy` 函数的驱动程序。我们提供了 `gen-driver.pl` 程序，它可以为任意大小的输入数组生成驱动程序。
-
-输入： 
+Build & test:
 
 ```bash
-unix> make drivers
+cd sim/seq
+make VERSION=full                          # build ssim from seq-full.hcl
+./ssim -t ../y86-code/asumi.yo             # smoke-test iaddq (asumi uses it)
+(cd ../y86-code; make testssim)            # regression: old instructions still OK
+(cd ../ptest; make SIM=../seq/ssim)        # full ptest suite (minus iaddq)
+(cd ../ptest; make SIM=../seq/ssim TFLAGS=-i)   # ptest for iaddq itself
 ```
 
+---
 
-将会构建以下两个的驱动程序： 
+## ⚡ Part C: Pipeline & `ncopy` (`sim/pipe`)
 
-  * `sdriver.yo`: 一个小驱动程序，用于在包含4个元素的小数组上测试 `ncopy` 函数。如果你的程序正确，该程序在复制完 `src` 数组后，会带着寄存器 `%rax` 中的值为2而暂停。
-  * `ldriver.yo`: 一个大驱动程序，用于在包含63个元素的较大数组上测试 `ncopy` 函数。如果你的程序正确，该程序在复制完 `src` 数组后，会带着寄存器 `%rax` 中的值为31 (0x1f) 而暂停。
+Part C is the heart of the lab: get `ncopy.ys` to run as fast as possible on a
+pipelined PIPE simulator. Two levers — the processor and the program — and both get
+tweaked.
 
-每次修改 `ncopy.ys` 程序后，你可以通过输入 `unix> make drivers` 来重新构建驱动程序。
-每次修改 `pipe-full.hcl` 文件后，你可以通过输入 `unix> make psim VERSION=full` 来重新构建模拟器。
+### `iaddq` in PIPE
 
-要在GUI模式下用一个4元素的小数组测试你的方案，输入： 
+The same instruction, but now pipelined: the signals split across the F/D/E/M/W
+stage latches. The edits mirror Part B, with each control signal reading its own
+stage's `icode`:
+
+```hcl
+bool instr_valid = f_icode in
+    { INOP, IHALT, IRRMOVQ, IIRMOVQ, IRMMOVQ, IMRMOVQ,
+      IOPQ, IJXX, ICALL, IRET, IPUSHQ, IPOPQ, IIADDQ };
+
+bool need_regids =
+    f_icode in { IRRMOVQ, IOPQ, IPUSHQ, IPOPQ,
+                 IIRMOVQ, IRMMOVQ, IMRMOVQ, IIADDQ };
+
+bool need_valC =
+    f_icode in { IIRMOVQ, IRMMOVQ, IMRMOVQ, IJXX, ICALL, IIADDQ };
+
+word d_srcB = [
+    D_icode in { IOPQ, IRMMOVQ, IMRMOVQ, IIADDQ } : D_rB;
+    D_icode in { IPUSHQ, IPOPQ, ICALL, IRET } : RRSP;
+    1 : RNONE;
+];
+
+word d_dstE = [
+    D_icode in { IRRMOVQ, IIRMOVQ, IOPQ, IIADDQ } : D_rB;
+    D_icode in { IPUSHQ, IPOPQ, ICALL, IRET } : RRSP;
+    1 : RNONE;
+];
+
+word aluA = [
+    E_icode in { IRRMOVQ, IOPQ } : E_valA;
+    E_icode in { IIRMOVQ, IRMMOVQ, IMRMOVQ, IIADDQ } : E_valC;
+    E_icode in { ICALL, IPUSHQ } : -8;
+    E_icode in { IRET, IPOPQ } : 8;
+];
+
+word aluB = [
+    E_icode in { IRMMOVQ, IMRMOVQ, IOPQ, ICALL,
+                 IPUSHQ, IRET, IPOPQ, IIADDQ } : E_valB;
+    E_icode in { IRRMOVQ, IIRMOVQ } : 0;
+];
+
+bool set_cc = (E_icode in { IOPQ, IIADDQ }) &&
+    !m_stat in { SADR, SINS, SHLT } && !W_stat in { SADR, SINS, SHLT };
+```
+
+### Optimizing `ncopy.ys`
+
+`ncopy(src, dst, len)` copies `len` words and returns the count of positive words.
+The baseline version walks the loop once per element at a leisurely **14.24 CPE**
+(897 cycles for 63 elements). My version gets to **7.49 avg CPE** — past the 7.50
+full-credit bar. Three tricks:
+
+**1. 10-way loop unrolling.** Instead of processing 1 element per trip, the main
+loop (Loop1…Loop10) processes **10 elements per iteration**: ten `mrmovq` loads
+followed by ten `rmmovq` stores, then the counters and pointers are bumped in bulk
+(`iaddq $80, %rdi`, `iaddq $80, %rsi`, `iaddq $-10, %rdx`). The branch is taken
+10× less often, so 9 out of 10 loop-overhead branches just disappear.
+
+**2. Avoiding load-use hazards with `%r10`/`%r11`.** A `mrmovq` followed
+immediately by an instruction that *uses* its result stalls the pipeline. The
+trick is to interleave two independent loads — one into `%r10`, the next into
+`%r11` — so the consumer of `%r10` never waits on a just-loaded value:
+
+```asm
+mrmovq (%rdi), %r10       # load 0th word
+mrmovq 8(%rdi), %r11      # load 1st word (independent of r10)
+rmmovq %r10, (%rsi)       # store 0th word — r10 finished loading
+andq   %r10, %r10         # test it — no stall
+iaddq  $1, %rax           # count++ if positive
+```
+
+**3. Specialized remainder handling.** `len` isn't always a multiple of 10, so a
+`Root` dispatcher classifies `len % 10` and jumps straight into the middle of the
+unrolled body (Remain1…Remain9), with `iaddq`-based arithmetic on `%rdx` and
+`jl`/`jg`/`je` branches doing the dispatch. Each remainder path copies and counts
+exactly the leftover elements — no wasted work, and `len = 0` falls straight
+through to `ret`.
+
+Result (from my run):
+
+<img src="./pic/ncopy.ys.png" alt="ncopy benchmark output"/>
+
+```text
+Average CPE      7.49
+```
+
+Build & test:
 
 ```bash
-unix> ./psim -g sdriver.yo
+cd sim/pipe
+make psim VERSION=full                       # build psim from pipe-full.hcl
+make drivers                                 # build sdriver.yo + ldriver.yo
+./psim -g sdriver.yo                         # 4-element test (%rax = 2)
+./psim -g ldriver.yo                         # 63-element test (%rax = 31)
+./correctness.pl                             # ISA: all block sizes 0..64
+./correctness.pl -p                          # PIPE: all block sizes 0..64
+./benchmark.pl -f ncopy.ys                   # CPE across block sizes
+./check-len.pl < ncopy.yo                    # must stay under 1000 bytes
 ```
 
+---
 
-要在GUI模式下用一个63元素的大数组测试你的方案，输入： 
+## ✅ Test Results
 
-```bash
-unix> ./psim -g ldriver.yo
-```
+| Part | Test | Result |
+| --- | --- | --- |
+| A | `yas` + `yis` on `sum.ys` / `rsum.ys` / `copy.ys` | ✅ each halts with `%rax = 0xCBA` |
+| B | `make VERSION=full`, then `ptest` (incl. `TFLAGS=-i`) | ✅ all regression tests pass |
+| C | `iaddq` in `pipe-full.hcl` (regression via `../y86-code` + `../ptest`) | ✅ all pass |
+| C | `correctness.pl` / `correctness.pl -p` (block sizes 0–64) | ✅ copy + count correct |
+| C | `benchmark.pl -f ncopy.ys` | ⚡ average CPE **7.49** (full credit: < 7.50) |
 
+---
 
-若你的模拟器能够在这两种块长度上正确运行你的 `ncopy.ys` ，你则可以进行以下额外测试： 
+## 🙏 Credits
 
-* **在ISA模拟器上测试驱动文件**。确保你的 `ncopy.ys` 函数在 YIS 上能正常工作： 
+- Lab by [CS:APP](https://csapp.cs.cmu.edu/) — *Randal E. Bryant & David R. O'Hallaron*
+- Course `sim.tar` & handout by my university
+- Solution explanations written by me, verified against `yas` / `yis` / `ssim` /
+  `psim` and the `y86-code` + `ptest` regression suites
 
-    ```bash
-    unix> make drivers
-    unix> ../misc/yis sdriver.yo
-    ```
-
-* **用ISA模拟器在一系列块长度上测试你的代码**。Perl 脚本 `correctness.pl` 可以生成从0到某个上限（默认为65）以及一些更大尺寸的块长度的驱动文件。它会模拟这些文件（默认使用 YIS）并检查结果，并生成一个报告，显示每个块长度的状态： 
-
-    ```bash
-    unix> ./correctness.pl
-    ```
-
-* **用流水线模拟器在一系列块长度上测试你的代码**。最后，你可以在流水线模拟器上运行与之前在 ISA 模拟器上相同的代码测试。
-    ```bash
-    unix> ./correctness.pl -p
-    ```
-
-* **对特定长度做调试（可选）。**如果你在某个长度K上得到不正确的结果，你可以为该长度生成一个包含检查代码且结果随机变化的驱动文件： 
-
-  ```bash
-  unix> ./gen-driver.pl -f ncopy.ys -n K -rc > driver.ys
-  unix> make driver.yo
-  unix> ../misc/yis driver.yo
-  ```
-
-  程序结束时，寄存器 `%rax` 会有以下值： 
-    * `0xaaaa`: 所有测试通过。
-    * `0xbbbb`: 计数值不正确。
-    * `0xcccc`: `ncopy` 函数超过1000字节。
-    * `0xdddd`: 部分源数据未被复制到目标位置。
-    * `0xeeee`: 目标区域之前或之后的数据被损坏。
-
-## 6 评估
-
-本次实验总计100分：Part A 20分，Part B 30分，Part C 50分。
-
-#### Part A
-
-Part A 共20分，每个 Y86-64 程序5分。每个程序都将根据其正确性进行评估，包括对栈和寄存器的正确处理，以及与 `examples.c` 中C函数示例的功能等价性。
-
-#### Part B
-
-这部分实验共30分： 
-
-  * 10分：描述 `iaddq` 指令所需的计算过程。
-  * 5分：通过 `y86-code` 中的基准回归测试，以验证你的模拟器仍然能正确执行基准套件。
-  * 15分：通过 `ptest` 中针对 `iaddq` 的回归测试。
-
-#### Part C
-
-这部分实验共50分。
-
-  * 20分：`ncopy.ys` 和 `pipe-full.hcl` 文件中的描述与实现各占10分。
-  * 30分：性能得分。
-
-要获得性能分数，你的程序必须是正确的。也就是说，`ncopy` 必须能在 YIS 上正确运行，且 `pipe-full.hel` 必须通过 `y86-code` 和 `ptest` 中的所有测试。
-
-我们将以**每元素周期数（Cycles Per Element, CPE）**为单位来衡量你函数的性能。如果模拟代码需要 C 个周期来复制一个 N 元素的块，那么 CPE 就是 $C/N$。PIPE 模拟器会显示完成程序所需的总周期数。
-
-基准版本的 `ncopy` 函数在标准 PIPE 模拟器上运行一个63元素的大数组需要897个周期，其 CPE 为 $897/63 = 14.24$。我们将通过计算从1到64个元素块长度的 CPE 平均值来评估你函数的性能。你可以使用 `pipe` 目录中的 `benchmark.pl` Perl 脚本来运行你的 `ncopy.ys` 代码在一系列块长度上的模拟，并计算平均CPE。
-
-```bash
-unix> ./benchmark.pl
-```
-
-你应该能够达到至少低于9.00的平均CPE。如果你的平均CPE为c，那么你在这部分实验的分数S将是： 
-$S = \begin{cases} 0, & c > 10.5 \\ 10 \cdot (10.5 - c), & 7.50 \le c \le 10.50 \\ 30, & c < 7.50 \end{cases}$ 
-
-## 7 提交说明
-
-  * 你需要提交三组文件： 
-      * **Part A**: `sum.ys`, `rsum.ys`, `copy.ys` 
-      * **Part B**: `seq-full.hcl` 
-      * **Part C**: `ncopy.ys`, `pipe-full.hcl` 
-  * 请确保在每个提交文件的顶部注释中包含了你的姓名和学号。
-    
-
-## 8 提示
-
-  * `sdriver.yo` 和 `ldriver.yo` 都足够小，可以在GUI模式下进行调试。GUI模式能够让你的调试简便许多。
-
-  * 当你以GUI模式运行 `psim` 或 `ssim` 时，“Program Code”窗口最初可能是一个关闭的图标。只需点击该图标即可展开窗口。
-
-  * `psim` 和 `ssim` 模拟器在执行无效的Y86-64目标文件时会因分段错误而终止。
-
-  * 若你在系统中配置了特殊的显示服务器，可能出现GUI窗口无法正确加载的问题。请确保你已经初始化了DISPLAY环境变量： 
-    ```bash
-    unix> setenv DISPLAY myhost.edu:0
-    ```
+**May your pipeline never stall. 🚀**

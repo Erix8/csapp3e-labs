@@ -2,9 +2,9 @@
 ##################################################################
 # ncopy.ys - Copy a src block of len words to dst.
 # Return the number of positive words (>0) contained in src.
-# 作者：刘和磊
-# 学号：2023012122
-# Describe how and why you modified the baseline code.
+# Author: Erix8
+# Optimization: 10-way loop unrolling with %r10/%r11 interleaving
+# to avoid load-use hazards, plus dedicated remainder handling.
 #
 ##################################################################
 # Do not modify this portion

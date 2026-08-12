@@ -16,11 +16,6 @@ StartFun:
 # ncopy.ys - Copy a src block of len words to dst.
 # Return the number of positive words (>0) contained in src.
 #
-# Include your name and ID here
-# 作者：刘和磊
-# 学号：2023012122
-# Describe how and why you modified the baseline code.
-#
 ##################################################################
 # Do not modify this portion
 # Function prologue.

@@ -10,20 +10,20 @@
 ## Your job is to add the rest of the logic to make it work
 
 ##########################################################################
-#  作者：刘和磊                                               		       #
-#  学号：2023012122                                                       #
-#  iaddq 指令实现说明：                                                    #
-#  指令格式：iaddq V, rB （ opcode: 0xC ）                                 #
-#  功能：将立即数 V 与寄存器 rB 的值相加，结果写回 rB，更新条件码                #
-#  阶段分解（参考 Figure 4.18）：                                            #
-#  1. Fetch：icode:ifun <- M1[PC]; rA:rB <- M1[PC+1]; 					 #
-#            D <- M8[PC+2]; valP <- PC+10                                #
-#  2. Decode：valB <- R[rB]（无需另一个寄存器输入）                          #
-#  3. Execute：valE <- valB + valC; Set CC                               #
-#  4. Memory：无内存访问                                                   #
-#  5. Write Back：R[rB] <- valE                                          #
-#  6. PC Update：PC <- valP（顺序执行）                                     #
-###########################################################################
+#  Author: Erix8                                                         #
+#                                                                        #
+#  iaddq V, rB (opcode 0xC): add immediate V to register rB,             #
+#  write the result back to rB, and update the condition codes.          #
+#                                                                        #
+#  Pipeline stages (see Figure 4.18):                                    #
+#  1. Fetch:      icode:ifun <- M1[PC]; rA:rB <- M1[PC+1];               #
+#                 valC <- M8[PC+2]; valP <- PC+10                        #
+#  2. Decode:     valB <- R[rB]                                          #
+#  3. Execute:    valE <- valB + valC; set CC                            #
+#  4. Memory:     no memory access                                       #
+#  5. Write back: R[rB] <- valE                                          #
+#  6. PC update:  PC <- valP (sequential)                                #
+##########################################################################
 
 ####################################################################
 #    C Include's.  Don't alter these                               #
