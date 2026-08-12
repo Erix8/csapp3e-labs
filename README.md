@@ -36,6 +36,15 @@ networking. Each lab lives in its own directory with its own write-up and soluti
 
 ---
 
+## 📦 Lab Sources
+
+The code in this repository comes from two sources:
+
+- **Data Lab, Attack Lab, Arch Lab** (`DataLab/`, `AttackLab/`, `ArchLab/`) — released by the school course.
+- **All other labs** — downloaded from the official [CS:APP self-study handout](https://csapp.cs.cmu.edu/3e/labs.html).
+
+---
+
 ## 🐳 Docker Environment
 
 This repository provides a Docker-based development environment to ensure consistent tooling
@@ -45,7 +54,7 @@ across platforms. The image is based on **Ubuntu 20.04 (amd64)** and includes:
 | --- | --- |
 | 🛠️ Build toolchain | `gcc-multilib`, `g++-multilib`, `build-essential` |
 | 🧰 Utilities | `git`, `wget`, `curl`, `vim`, `zsh` |
-| 🐛 Debugging / scripting | `python3`, `gdb` |
+| 🐛 Debugging / scripting | `python3`, `gdb`, `flex`, `bison` |
 
 ### 🚀 Quick Start
 
