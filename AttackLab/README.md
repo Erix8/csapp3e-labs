@@ -32,8 +32,8 @@ stack gets boring, by stitching together existing code with ROP. ✨
 
 | File | Purpose |
 | --- | --- |
-| `ctarget` | 🎯 Code-injection target (Phases 1–3) |
-| `rtarget` | 🧩 ROP target (Phases 4–5) |
+| `ctarget` | 🎯 Code-injection target (Phases 1–3) ❌ **Not included** |
+| `rtarget` | 🧩 ROP target (Phases 4–5) ❌ **Not included** |
 | `farm.c` | 🌾 Source of `rtarget`'s gadget farm |
 | `hex2raw` | 🔧 Converts hex-byte payloads into raw input bytes |
 | `ctarget01.txt` | 💉 My Phase 1 payload |
