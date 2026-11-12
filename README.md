@@ -35,7 +35,7 @@ sudo apt-get install gcc-multilib, g++-multilib build-essential gdb python3 git 
 
 [Data Lab]: ./DataLab/README.md
 [Bomb Lab]: ./BombLab/bomblab.pdf
-[Attack Lab]: ./AttackLab/attacklab.pdf
+[Attack Lab]: ./AttackLab/README.md
 [Arch Lab]: ./ArchLab/README.md
 [Cache Lab]: ./CacheLab/cachelab.pdf
 [Perf Lab]: ./PerfLab/perflab.pdf
