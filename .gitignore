@@ -18,3 +18,4 @@ psim
 ssim
 *-std.c
 *-grammar.c
+*-full.c
