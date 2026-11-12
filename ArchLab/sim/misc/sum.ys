@@ -1,0 +1,52 @@
+# sum.ys - Iterative linked-list sum
+# Author: Eric Liu
+# Equivalent to the C function sum_list
+
+# Execution begins at address 0 
+	.pos 0
+	irmovq stack, %rsp  	# Set up stack pointer
+	call main		        # Execute main program
+	halt			        # Terminate program 
+
+# Data: test linked list (3 elements)
+.align 8
+ele1:
+    .quad 0x00a
+    .quad ele2
+ele2:
+    .quad 0x0b0
+    .quad ele3
+ele3:
+    .quad 0xc00
+    .quad 0
+# END
+
+# Code
+main:
+    irmovq ele1, %rdi     # arg1 = head of list
+    call sum_list
+    halt
+
+# sum_list: long sum_list(list_ptr ls)
+# %rdi = ls, returns sum in %rax
+sum_list:
+    pushq %rbp            # Save old frame pointer
+    rrmovq %rsp, %rbp
+    xorq %rax, %rax       # sum = 0
+
+loop_start:
+    andq %rdi, %rdi       # ls == NULL?
+    je loop_end
+    mrmovq (%rdi), %r10   # r10 = ls->val
+    addq %r10, %rax       # sum += ls->val
+    mrmovq 8(%rdi), %rdi  # ls = ls->next
+    jmp loop_start
+
+loop_end:
+    rrmovq %rbp, %rsp     # Restore stack
+    popq %rbp
+    ret
+
+# Stack starts here and grows to lower addresses
+	.pos 0x200
+stack:

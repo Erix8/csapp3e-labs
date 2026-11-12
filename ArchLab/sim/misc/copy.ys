@@ -1,0 +1,60 @@
+# copy.ys - Copy a memory block and return the XOR checksum
+# Author: Eric Liu
+# Equivalent to the C function copy_block
+
+# Execution begins at address 0 
+	.pos 0
+	irmovq stack, %rsp  	# Set up stack pointer
+	call main		        # Execute main program
+	halt			        # Terminate program 
+
+# Data: source and destination blocks
+.align 8
+# Source block
+src:
+    .quad 0x00a
+    .quad 0x0b0
+    .quad 0xc00
+# Destination block
+dest:
+    .quad 0x111
+    .quad 0x222
+    .quad 0x333
+
+# Code
+main:
+    irmovq src, %rdi      # arg1 = src
+    irmovq dest, %rsi     # arg2 = dest
+    irmovq $3, %rdx       # arg3 = len
+    call copy_block
+    halt                  # %rax holds the checksum
+
+# copy_block: long copy_block(long *src, long *dest, long len)
+# %rdi = src, %rsi = dest, %rdx = len, returns checksum in %rax
+copy_block:
+    pushq %rbp            # Save old frame pointer
+    rrmovq %rsp, %rbp
+
+    xorq %rax, %rax       # result = 0
+
+copy_loop:
+    andq %rdx, %rdx       # len == 0?
+    je copy_end
+    mrmovq (%rdi), %r10   # r10 = *src
+    rmmovq %r10, (%rsi)   # *dest = r10
+    xorq %r10, %rax       # result ^= val
+    irmovq $8, %r11
+    addq %r11, %rdi       # src++
+    addq %r11, %rsi       # dest++
+    irmovq $1, %r11
+    subq %r11, %rdx       # len--
+    jmp copy_loop
+
+copy_end:
+    rrmovq %rbp, %rsp     # Restore stack
+    popq %rbp
+    ret                   # %rax holds the checksum
+
+# Stack starts here and grows to lower addresses
+	.pos 0x200
+stack:
