@@ -143,7 +143,8 @@ NOTES:
  *   Rating: 1
  */
 int bitXor(int x, int y) {
-  return 2;
+  /* XOR is (x & ~y) | (~x & y), but use ~ and & to simulate | via De Morgan */
+  return ~(~(x & ~y) & ~(~x & y));
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -152,9 +153,8 @@ int bitXor(int x, int y) {
  *   Rating: 1
  */
 int tmin(void) {
-
-  return 2;
-
+  /* TMin is 0x80000000 */
+  return 1 << 31;
 }
 //2
 /*
@@ -165,7 +165,12 @@ int tmin(void) {
  *   Rating: 1
  */
 int isTmax(int x) {
-  return 2;
+  /* TMax + 1 = TMin, and TMax ^ TMin = all 1s. Also handle x = -1 edge case */
+  int x_plus_1 = x + 1;
+  int xor = x ^ x_plus_1;
+  int not_xor = ~xor;
+  int is_neg1 = !(x_plus_1);
+  return !(not_xor | is_neg1);
 }
 /* 
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -176,7 +181,11 @@ int isTmax(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-  return 2;
+  /* Create mask with odd bits set (0xAAAAAAAA). */
+  int mask = 0xAA;
+  mask |= mask << 8;
+  mask |= mask << 16;
+  return !((x & mask) ^ mask);
 }
 /* 
  * negate - return -x 
@@ -186,7 +195,7 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+  return ~x + 1;
 }
 //3
 /* 
@@ -199,7 +208,10 @@ int negate(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+  /* Check x - 0x30 >= 0 and  0 <= 0x39 - x */
+  int lower = x + (~0x30 + 1); // x - 0x30
+  int upper = 0x39 + (~x + 1); // 0x39 - x
+  return !(lower >> 31) & !(upper >> 31);
 }
 /* 
  * conditional - same as x ? y : z 
@@ -209,7 +221,9 @@ int isAsciiDigit(int x) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+  /* Generate mask: 0xFFFFFFFF if x != 0, 0x00000000 otherwise. */
+  int mask = ~(!!x) + 1;
+  return (y & mask) | (z & ~mask);
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
@@ -219,7 +233,18 @@ int conditional(int x, int y, int z) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  return 2;
+  /* Compare the sign of x and y, handle x_sign & !y_sign
+     if x & y have same sign, handle y - x >= 0 */
+  int x_sign = x >> 31;
+  int y_sign = y >> 31;
+  int sign_eq = !(x_sign ^ y_sign);
+  // Case1: different signs, x <= y when x is neg
+  int sign_diff_less = x_sign & !y_sign;
+  // Case2: same signs, x <= y when y - x >= 0
+  int y_minus_x = y + (~x + 1);
+  int non_neg = !(y_minus_x >> 31);
+  int same_sign_less_or_eq = sign_eq & non_neg;
+  return sign_diff_less | same_sign_less_or_eq;
 }
 //4
 /* 
@@ -231,7 +256,8 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  return 2;
+  /* 0 and -0 have same sign bit. For x=0, ~x +1 =0, so sign bit is 0. */
+  return ((x | (~x + 1)) >> 31) + 1;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -246,7 +272,28 @@ int logicalNeg(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+  /* Find position of highest set bit */
+  int sign, b16, b8, b4, b2, b1, b0;
+  sign = x >> 31;
+  x = (sign & ~x) | (~sign & x); // Convert to positive if x is negative
+  // Check if higher 16 bits have any set bits
+  b16 = !!(x >> 16) << 4;
+  x >>= b16;
+  // Check next 8 bits
+  b8 = !!(x >> 8) << 3;
+  x >>= b8;
+  // Check next 4 bits
+  b4 = !!(x >> 4) << 2;
+  x >>= b4;
+  // Check next 2 bits
+  b2 = !!(x >> 2) << 1;
+  x >>= b2;
+  // Check next 1 bit
+  b1 = !!(x >> 1);
+  x >>= b1;
+  // Check remaining bit
+  b0 = x;
+  return b16 + b8 + b4 + b2 + b1 + b0 + 1;
 }
 //float
 /* 
@@ -261,7 +308,32 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 unsigned floatScale2(unsigned uf) {
-  return 2;
+  /* Extract sign, exponent, fraction */
+  unsigned sign = uf & 0x80000000;
+  unsigned exp = uf & 0x7F800000;
+  unsigned frac = uf & 0x007FFFFF;
+  // Check for NaN or infinity (exp is all 1s)
+  if (exp == 0x7F800000) {
+    return uf; // NaN or infinity, return as is
+  }
+  // Denormalized (exp is 0)
+  if (exp == 0) {
+    // Shift fraction left by 1 (scale by 2)
+    frac <<= 1;
+    // If fraction overflows into exponent, becomes normalized
+    if (frac & 0x00800000) {
+      exp = 0x00800000;   // exp = 1
+      frac &= 0x007FFFFF; // clear overflow bit
+    }
+    return sign | exp | frac;
+  }
+  // Normalized (exp is not 0 and not all 1s)
+  exp += 0x00800000; // increment exponent by 1 (scale by 2)
+  // Check if new exp is all 1s (infinity)
+  if (exp == 0x7F800000) {
+    frac = 0; // infinity has 0 fraction
+  }
+  return sign | exp | frac;
 }
 /* 
  * floatFloat2Int - Return bit-level equivalent of expression (int) f
@@ -276,7 +348,34 @@ unsigned floatScale2(unsigned uf) {
  *   Rating: 4
  */
 int floatFloat2Int(unsigned uf) {
-  return 2;
+  unsigned sign, frac, mantissa;
+  int exp, bias, e, result;
+  sign = uf >> 31;
+  exp = (uf >> 23) & 0xFF;
+  frac = uf & 0x7FFFFF;
+  bias = 127;
+  e = exp - bias;
+  // Check for out of range (exp too large or NaN/infinity)
+  if (exp == 0xFF || e > 30) {
+    return 0x80000000u;
+  }
+  // Check for values less than 1 (exp too small)
+  if (e < 0) {
+    return 0;
+  }
+  // Add implicit leading 1 to fraction
+  mantissa = frac | 0x800000;
+  // Shift mantissa to get integer value
+  if (e >= 23) {
+    result = mantissa << (e - 23);
+  } else {
+    result = mantissa >> (23 - e);
+  }
+  // Apply sign
+  if (sign) {
+    result = -result;
+  }
+  return result;
 }
 /* 
  * floatPower2 - Return bit-level equivalent of the expression 2.0^x
@@ -292,5 +391,28 @@ int floatFloat2Int(unsigned uf) {
  *   Rating: 4
  */
 unsigned floatPower2(int x) {
-    return 2;
+  /*
+   * Single-precision float has exponent bias 127. For 2.0^x:
+   * - If x is too large (exponent exceeds max), return +INF
+   * - If x is too small (exponent below denorm range), return 0
+   * - Otherwise, construct normalized or denormalized representation
+   */
+  int max_exp = 127;         // Maximum exponent for normalized
+  int min_norm_exp = -126;   // Minimum exponent for normalized
+  int min_denorm_exp = -149; // Minimum exponent for denormalized
+  // Case 1: Result is too large (exceeds +INF threshold)
+  if (x > max_exp) {
+    return 0x7F800000; // +INF (sign 0, exp all 1s, frac 0)
+  }
+  // Case 2: Result is too small (below denormalized range)
+  if (x < min_denorm_exp) {
+    return 0;
+  }
+  // Case 3: Denormalized (between min_denorm_exp and min_norm_exp - 1)
+  if (x < min_norm_exp) {
+    // For denorm: 2^x = (frac / 2^23) × 2^(-126)
+    return 1 << (x + 149); // sign 0, exp 0, frac = 2^(x + 149)
+  }
+  // Case 4: Normalized (between min_norm_exp and max_exp)
+  return (x + 127) << 23; // Sign 0, frac 0, exp in exponent field
 }
