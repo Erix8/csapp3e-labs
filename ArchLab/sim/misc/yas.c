@@ -48,8 +48,6 @@ typedef struct {
 
 /* Information about current input line */
 token_rec tokens[TOK_PER_LINE];
-int lineno;  /* What line number am I processing? */
-int bytepos; /* What byte address is the current instruction */
 int tcount;  /* How many tokens are there in this line? */
 int tpos;    /* What token am I currently processing */
 

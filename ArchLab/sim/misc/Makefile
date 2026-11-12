@@ -15,7 +15,7 @@ all: yis yas hcl2c
 	$(YAS) $*.ys
 
 # These are the explicit rules for making yis yas and hcl2c and hcl2v
-yas-grammar.o: yas-grammar.c
+yas-grammar.o: yas-grammar.c yas.h
 	$(CC) $(LCFLAGS) -c yas-grammar.c
 
 yas-grammar.c: yas-grammar.lex
