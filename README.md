@@ -33,7 +33,7 @@ sudo apt-get install gcc-multilib, g++-multilib build-essential gdb python3 git 
 | 🧠 [Malloc Lab] | Implement a dynamic memory allocator (malloc, free, realloc) 📦 |
 | 🌐 [Proxy Lab] | Write a concurrent web proxy with caching 🔗 |
 
-[Data Lab]: ./DataLab/datalab.pdf
+[Data Lab]: ./DataLab/README.md
 [Bomb Lab]: ./BombLab/bomblab.pdf
 [Attack Lab]: ./AttackLab/attacklab.pdf
 [Arch Lab]: ./ArchLab/archlab.pdf

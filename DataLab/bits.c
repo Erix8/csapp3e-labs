@@ -256,7 +256,7 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  /* 0 and -0 have same sign bit. For x=0, ~x +1 =0, so sign bit is 0. */
+  /* For nonzero x, x or -x has its sign bit set, including TMin. */
   return ((x | (~x + 1)) >> 31) + 1;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
@@ -275,7 +275,7 @@ int howManyBits(int x) {
   /* Find position of highest set bit */
   int sign, b16, b8, b4, b2, b1, b0;
   sign = x >> 31;
-  x = (sign & ~x) | (~sign & x); // Convert to positive if x is negative
+  x = x ^ sign; // Complement negative values; leave nonnegative values unchanged.
   // Check if higher 16 bits have any set bits
   b16 = !!(x >> 16) << 4;
   x >>= b16;
@@ -318,14 +318,8 @@ unsigned floatScale2(unsigned uf) {
   }
   // Denormalized (exp is 0)
   if (exp == 0) {
-    // Shift fraction left by 1 (scale by 2)
-    frac <<= 1;
-    // If fraction overflows into exponent, becomes normalized
-    if (frac & 0x00800000) {
-      exp = 0x00800000;   // exp = 1
-      frac &= 0x007FFFFF; // clear overflow bit
-    }
-    return sign | exp | frac;
+    // A bit shifted into the exponent field naturally creates a normalized value.
+    return sign | (frac << 1);
   }
   // Normalized (exp is not 0 and not all 1s)
   exp += 0x00800000; // increment exponent by 1 (scale by 2)
