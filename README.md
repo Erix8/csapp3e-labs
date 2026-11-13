@@ -21,17 +21,17 @@ sudo apt-get install gcc-multilib, g++-multilib build-essential gdb python3 git 
 
 ## 🗂️ Lab Contents
 
-| Lab | Summary |
-| --- | ------- |
-| 🧪 [Data Lab] | Bit-level manipulations and integer/floating-point representation puzzles 🧮 |
-| 💣 [Bomb Lab] | Defuse a binary bomb by reverse-engineering x86-64 assembly 🔍 |
-| 🎯 [Attack Lab] | Code injection and return-oriented programming (ROP) attacks 🔫 |
-| 🏗️ [Arch Lab] | Design and optimize a pipelined Y86-64 processor ⚡ |
-| 🧊 [Cache Lab] | Write a cache simulator and optimize matrix transpose for cache performance 📊 |
-| 🚀 [Perf Lab] | Optimize image processing kernels (rotate, smooth) 🖼️ |
-| 🐚 [Shell Lab] | Write a simple Unix shell with job control 🖥️ |
-| 🧠 [Malloc Lab] | Implement a dynamic memory allocator (malloc, free, realloc) 📦 |
-| 🌐 [Proxy Lab] | Write a concurrent web proxy with caching 🔗 |
+| Lab | Summary | Status |
+| --- | ------- | ------ |
+| 🧪 [Data Lab] | Bit-level integer/floating-point representation puzzles 🧮 | ✅ Done |
+| 💣 [Bomb Lab] | Defuse a binary bomb by reverse-engineering x86-64 assembly 🔍 | 🔄 Working |
+| 🎯 [Attack Lab] | Code injection and return-oriented programming (ROP) attacks 🔫 | ✅ Done |
+| 🏗️ [Arch Lab] | Design and optimize a pipelined Y86-64 processor ⚡ | ✅ Done |
+| 🧊 [Cache Lab] | Write a cache simulator and optimize matrix transpose performance 📊 | ⬜️ None |
+| 🚀 [Perf Lab] | Optimize image processing kernels (rotate, smooth) 🖼️ | ⬜️ None |
+| 🐚 [Shell Lab] | Write a simple Unix shell with job control 🖥️ | ⬜️ None |
+| 🧠 [Malloc Lab] | Implement a dynamic memory allocator (malloc, free, realloc) 📦 | ⬜️ None |
+| 🌐 [Proxy Lab] | Write a concurrent web proxy with caching 🔗 | ⬜️ None |
 
 [Data Lab]: ./DataLab/README.md
 [Bomb Lab]: ./BombLab/bomblab.pdf
